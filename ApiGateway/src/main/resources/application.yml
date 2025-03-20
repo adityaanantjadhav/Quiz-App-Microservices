@@ -1,0 +1,20 @@
+
+
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: QUESTIONSERVICE
+        uri: lb://QUESTIONSERVICE
+        predicates:
+        - Path=/question/**
+
+      - id: QUIZSERVICE
+        uri: lb://QUIZSERVICE
+        predicates:
+        - Path=/quiz/**
+
+      - id: USERSERVICE
+        uri: lb://USERSERVICE
+        predicates:
+        - Path=/user/**

@@ -1,0 +1,39 @@
+# IDE and editor settings
+.idea/
+.vscode/
+*.iml
+
+# Git and version control
+.git/
+.gitignore
+
+# Maven and Gradle caches
+.mvn/
+target/
+*.jar
+*.war
+*.class
+build/
+
+# Node dependencies (if any frontend is present)
+node_modules/
+npm-debug.log
+yarn.lock
+package-lock.json
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+logs/
+*.log
+*.out
+*.pid
+/tmp/
+*.swp
+
+# Environment variables and credentials
+.env
+*.pem
+*.key

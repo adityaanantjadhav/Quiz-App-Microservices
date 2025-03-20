@@ -1,0 +1,113 @@
+
+
+services:
+  postgresql:
+    image: postgres:latest
+    container_name: postgresql_first
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      PGPORT: 5433
+    ports:
+      - "5433:5433"
+    volumes:
+      - ./Data/Database:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # SQL script for DB creation
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      retries: 5
+      start_period: 10s
+
+  quiz-app-keyclock:
+    image: quay.io/keycloak/keycloak:26.1.2
+    command: [ "start-dev" ]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "9192:8080"
+
+
+
+
+  quiz-service-registry:
+    build: ./ServiceRegistry
+    container_name: quiz-service-registry
+    ports:
+      - "8761:8761"
+
+  quiz_api_gateway:
+    build: ./ApiGateway
+    container_name: quiz_api_gateway
+    environment:
+      SERVICE_REGISTRY_HOST: quiz-service-registry
+      SERVICE_REGISTRY_PORT: 8761
+      OAUTH_HOST: quiz-app-keyclock
+      OAUTH_PORT: 8080
+    ports:
+      - "8083:8080"
+
+  quiz_question_service:
+    build: ./QuestionService
+    container_name: quiz_question
+    environment:
+      SERVICE_REGISTRY_HOST: quiz-service-registry
+      SERVICE_REGISTRY_PORT: 8761
+      OAUTH_HOST: quiz-app-keyclock
+      OAUTH_PORT: 8080
+      SERVER_PORT: 8080
+      SQL_HOST: postgresql
+      SQL_PORT: 5433
+      SQL_DB: questiondb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - ./Data/Images:/app/uploads
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      quiz-service-registry:
+        condition: service_started
+    ports:
+      - "8081:8080"
+
+
+  quiz_quiz_service:
+    build: ./QuizService
+    container_name: quiz_service
+    environment:
+      SERVICE_REGISTRY_HOST: quiz-service-registry
+      SERVICE_REGISTRY_PORT: 8761
+      OAUTH_HOST: quiz-app-keyclock
+      OAUTH_PORT: 8080
+      SERVER_PORT: 8080
+      SQL_HOST: postgresql
+      SQL_PORT: 5433
+      SQL_DB: questiondb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      quiz-service-registry:
+        condition: service_started
+    ports:
+      - "8082:8080"
+
+  quiz_user_service:
+    build: ./UserService
+    container_name: user_service
+    environment:
+      SERVICE_REGISTRY_HOST: quiz-service-registry
+      SERVICE_REGISTRY_PORT: 8761
+      OAUTH_HOST: quiz-app-keyclock
+      OAUTH_PORT: 8080
+    depends_on:
+      - quiz-service-registry
+    ports:
+      - "8080:8080"
+
+
+
